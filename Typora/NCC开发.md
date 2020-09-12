@@ -106,7 +106,9 @@
 
 ##### 				2  表达式解析和执行
 
-​			A.1001 = A.1002 + A.1003*0.6 -> new Find('A.1001').set(Find('A.1002').mul(0.6).add('A.1003')) 这是
+​			A.1001 = A.1002 + A.1003*3 -> new Find('A.1001').set(Find('A.1003').mul(3).add('A.1002')) 这是
+
+​			赋值的过程：Find('A.1001').set(Find(A.1003).mul(3).add(A.1002))
 
 <img src="C:\Users\Administrator\Desktop\葵花宝典\表情包\表达式解析.jpg" alt="表达式解析" style="zoom:33%;" />			<img src="C:\Users\Administrator\Desktop\葵花宝典\表情包\维度切片.jpg" alt="维度切片" style="zoom:33%;" />
 
@@ -249,6 +251,135 @@ public Find(String str) throws BusinessException {
 1.抽象语法树 (Abstract Syntax Tree,AST) 抽象语法树是源代码结构的一种抽象表示，它以树的形状表示语言的语法结构。抽象语法树一般可以用来进行代码语法的检查，代码风格的检查，代码的格式化，代码的高亮，代码的错误提示以及代码的自动补全等等。
 2.语法解析器 (Parser) 语法解析器通常作为编译器或解释器出现。它的作用是进行语法检查，并构建由输入单词(Token)组成的数据结构(即抽象语法树)。语法解析器通常使用词法分析器(Lexer)从输入字符流中分离出一个个的单词(Token)，并将单词(Token)流作为其输入。实际开发中，语法解析器可以手工编写，也可以使用工具自动生成。
 3.词法分析器 (Lexer) 词法分析是指在计算机科学中，将字符序列转换为单词(Token)的过程。执行词法分析的程序便称为词法分析器。词法分析器(Lexer)一般是用来供语法解析器(Parser)调用的。
+4.我们只需要知道词法分析程序是将输入的代码字符序列转换成标记(Token)序列的程序，而语法分析程序则是将标记序列转换成语法树的程序。
+				expr---表达式
+				// 对每一个输入的字符串，构造一个 CodePointCharStream
+				CodePointCharStream cpcs = CharStreams.fromString(expr);
+
+				// 用 cpcs 构造词法分析器 lexer，词法分析的作用是产生记号
+				AntlrLexer lexer = new AntlrLexer(cpcs);
+
+				// 用词法分析器 lexer 构造一个记号流 tokens
+				CommonTokenStream tokens = new CommonTokenStream(lexer);
+
+				// 再使用 tokens 构造语法分析器 parser,至此已经完成词法分析和语法分析的准备工作
+				AntlrParser parser = new AntlrParser(tokens);
+
+				// 最终调用语法分析器的规则 prog，完成对表达式的验证
+				AntlrParser.ProgContext pcontext = parser.prog();
+
+				// 通过访问者模式，执行我们的程序
+				EvalVisitor evalVisitor = new EvalVisitor(this);
+				evalVisitor.visit(pcontext);
+				//最终计算结果
+				res = evalVisitor.getResult();
+5.简单来说，使用 ANTLR v4，一般分为三步：
+按照 ANTLR v4 的编写待解析语言的语法定义文件，//主流语言的 ANTLR v4 语法定义可以找仓库antlr/grammars-v4中找到，一般以g4为语法定义文件后缀
+运行 ANTLR 工具，生成指定目标语言的解析器源代码
+使用生成的解析器完成代码的解析等等
+6.最后，ANTLR v4 的语法规则分为词法(Lexer)规则和语法(Parser)规则：词法规则定义了怎么将代码字符串序列转换成标记序列；语法规则定义怎么将标记序列转换成语法树。通常，词法规则的规则名以大写字母命名，而语法规则的规则名以小写字母开始。
 ```
 
    
+
+```
+Antlr.g4文件的编写
+
+grammar Antlr;
+prog:stat+;
+
+stat: expr NEWLINE                  # print
+|ID '=' expr NEWLINE                # assign
+|NEWLINE                            # blank
+;
+
+expr:expr (MULTIPLY|DIVIDE) expr    # MulDiv
+|expr (PLUS|MINUS) expr             # AddSub
+|'('expr')'                         # Private
+|value                              # IdInt
+;
+value:INT
+|ID
+;
+
+MULTIPLY:'*';
+DIVIDE:'/';
+PLUS:'+';
+MINUS:'-';
+ID:[a-z]+;
+INT:[1-9]+;
+NEWLINE:'\r'?'\n';
+WS:[ \t\r\n] -> skip;
+
+语法定义是采用自顶向下的设计方法，我们的Expr代码以规则prog作为根规则，prog由多条语句stat组成；而语句stat可以是表达式语句print和赋值语句assign；依次向下，到最后一层语法规则表达式expr，表达式可以是由表达式组成的加减乘除运算，或者是整数INT、变量ID，注意expr规则使用了递归的表达，即在expr规则的定义中引用了expr，这也是ANTLR v4的一个特点。 最后这里定义的词法规则包含了加减乘除、括号、变量、整数、赋值、注释和空白等规则；注意WS，这是标记我们的语法解析需要忽略注释和空白。
+
+运行Antlr.g4文件
+
+```
+
+![](C:\Users\Administrator\Desktop\葵花宝典\表情包\Antlr.png)
+
+a = (b+3)*2
+
+![](C:\Users\Administrator\Desktop\葵花宝典\表情包\微信图片_20200912144721.png)
+
+(b+3)*2
+
+![](C:\Users\Administrator\Desktop\葵花宝典\表情包\微信图片_20200912150905.png)
+
+```
+编写visitor文件
+使用Visitor模式时，visitor需要自己来指定如果访问特定类型的节点，ANTLR生成的解析器源码中包含了默认的Visitor基类/接口ExprVisitor.ts，在使用过程中，只需要对感兴趣的节点实现visit方法即可，比如我们需要访问到exprStat节点，只需要实现如下接口：
+package nc.ms.tb.dto;
+
+import java.util.concurrent.ConcurrentHashMap;
+
+import nc.ms.tb.dto.antlr.AntlrBaseVisitor;
+import nc.ms.tb.dto.antlr.AntlrParser;
+import nc.vo.pub.BusinessException;
+import nc.vo.pub.BusinessRuntimeException;
+public class EvalVisitor extends AntlrBaseVisitor<Object> {
+	
+    private ConcurrentHashMap<String, Object> memory = new ConcurrentHashMap<String, Object>();
+
+    //PythonDimExpress main  = new PythonDimExpress();
+    private IExpress<Find> express;
+    
+    private Find result;
+    
+    public EvalVisitor(IExpress<Find> express) {
+    	this.express = express;
+    }
+    
+    //执行表达式
+    @Override
+    public Object visitPrint(AntlrParser.PrintContext ctx) {
+    }
+	//赋值
+    @Override
+    public Find visitAssign(AntlrParser.AssignContext ctx) {
+    }
+	//*,/
+    @Override
+    public Find visitMulDiv(AntlrParser.MulDivContext ctx) {
+    }
+	//+,-
+    @Override
+    public Find visitAddSub(AntlrParser.AddSubContext ctx) {
+    }
+	//value的值，变量，常量
+    @Override
+    public Object visitIdInt(AntlrParser.IdIntContext ctx) {
+    }
+	//访问到括号内的表达式
+    @Override
+    public Find visitPrivate(AntlrParser.PrivateContext ctx) {
+    }
+    
+    public Find getResult() {
+    	return this.result;
+    }
+}
+
+```
+
