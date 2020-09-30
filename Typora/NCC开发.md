@@ -42,7 +42,9 @@
 
 ​			OutSysTask0801TaskTreeToExecListAction   --- 导入模板树选中显示导入任务列表  tb_sysimptask主表           tb_imptask_p导入任务参数表
 
-​			OutSysTask0802ExecTaskToLogListAction     ---导入任务选中显示日志列表   tb_imptasklog                   
+​			OutSysTask0802ExecTaskToLogListAction     ---导入任务选中显示日志列表   tb_imptasklog
+
+​			OutSysTask0806ExecTaskExcuteAction  --- 执行             
 
 ### 	凭证集成
 
