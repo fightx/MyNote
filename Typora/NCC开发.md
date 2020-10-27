@@ -385,3 +385,53 @@ public class EvalVisitor extends AntlrBaseVisitor<Object> {
 
 ```
 
+## 规则成员
+
+### action
+
+​		RuleMemberSaveAction     规则成员的增删改，验证 //状态： 1.新增  2.修改 3.删除 4.验证
+
+​		RuleMemberQueryAction 	规则成员的查询
+
+​		RulePropCoditionAction	规则成员的属性和过滤条件查询
+
+​		RuleMemberExportAction	规则成员导出
+
+### service
+
+​		IRuleMemberManagerService  -> RuleMemberManagerServiceImpl     规则成员的增删改查，验证
+
+### 设计
+
+​		
+
+```java
+@Override
+	public List<TreeModel> checkRuleMember(RuleMemberDTO dto) throws BusinessException {
+		List<TreeModel> levelValueTree = new ArrayList<TreeModel>();
+		try {
+			ICubeDefQueryService cubeDefQueryService = NCLocator.getInstance().lookup(ICubeDefQueryService.class);
+			CubeDef cube = cubeDefQueryService.queryCubeDefByPK(dto.getPk_cube());
+			// 解析树节点得到新表达式     LEVELTREEMEMBER('TB_DIMLEV_ENTITYUNIT','0100050O03','childDirection')
+			String express = getQueryExpress(dto.getConditionTree().get(0));//组织表达式
+			ISimpleFormulaExecute simpleFormulaExecute = NCLocator.getInstance().lookup(ISimpleFormulaExecute.class);
+			//根据表达式获取值
+			List<LevelValue> levelValues = simpleFormulaExecute.getLevelMember(express, dto.getPk_dimlevel(), true,
+					cube);
+			if (levelValues == null || levelValues.size() == 0) {
+				return levelValueTree;
+			}
+			
+
+1.一次验证checkRuleMember的过程
+RuleMemberSaveAction     RuleMemberManagerServiceImpl     SimpleFormulaExecuteImpl		Calculator
+doAction()				 checkRuleMember()			  	  getLevelMember()上下文	      calculator.eval(express)
+    
+Expression				 FunctionCall					  LEVELTREEMEMBER				LEVELTREEMEMBER
+expression.eval(this)	 calculator.eval(exp)			  run(stock)上下文			findMember(baseMember, type, dimDef)
+    
+LEVELTREEMEMBER						CachedDimMemberReader
+getMemberByRuleMemberOpeEnum		getDirectChildren、getAllChildrenInLevel and so on//执行对应方法，返回结果				
+
+```
+
