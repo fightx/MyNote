@@ -44,7 +44,13 @@
 
 ​			OutSysTask0802ExecTaskToLogListAction     ---导入任务选中显示日志列表   tb_imptasklog
 
-​			OutSysTask0806ExecTaskExcuteAction  --- 执行             
+​			OutSysTask0806ExecTaskExcuteAction  --- 执行          
+
+##### DB层
+
+​			tb_impexectask  导入任务基本信息、tb_imptask_p   导入任务参数列表、tb_imptasklog  导入任务信息主表 、tb_imptasklog_m  导入日志详细信息
+
+​			、tb_imptasklog_d  导入多维数据记录子表
 
 ### 	凭证集成
 
