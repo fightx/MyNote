@@ -437,7 +437,23 @@ Expression				 FunctionCall					  LEVELTREEMEMBER				LEVELTREEMEMBER
 expression.eval(this)	 calculator.eval(exp)			  run(stock)上下文			findMember(baseMember, type, dimDef)
     
 LEVELTREEMEMBER						CachedDimMemberReader
-getMemberByRuleMemberOpeEnum		getDirectChildren、getAllChildrenInLevel and so on//执行对应方法，返回结果				
+getMemberByRuleMemberOpeEnum		getDirectChildren、getAllChildrenInLevel and so on//执行对应方法，返回结果	
+    
+    
+
 
 ```
+
+![image-20201126141338100](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20201126141338100.png)
+
+|      |           | 预置    | 自定义         |
+| ---- | --------- | ------- | -------------- |
+| BCS  | issystem  | Y       | null           |
+|      | sysCode   | DEFAULT | EPMP           |
+|      | pk_cube   | null    | 该应用模型的pk |
+|      | tenant_id | null    | null           |
+| TBB  | issystem  | Y       |                |
+|      | sysCode   | TBB     | TBB            |
+|      | pk_cube   | null    | null           |
+|      | tenant_id | null    | 该租户的code   |
 
